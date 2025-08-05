@@ -8,7 +8,7 @@ class Customer(db.Model, UserMixin):
     email = db.Column(db.String(100), unique=True)
     usename = db.Column(db.String(100), unique=True)
     password_hash = db.Column(db.String(150))
-    date_joined = db.Column(db.Datime(), default=datetime.utime)
+    date_joined = db.Column(db.DateTime(), default=datetime.utcnow)
 
     cart_items = db.relationship('Cart', backref=db.backref('customer', lazy=True))
     orders = db.relationship('Order', backref=db.backref('customer', lazy=True))
@@ -36,7 +36,7 @@ class Product(db.Model):
     in_stock = db.Column(db.Integer, nullable=False)
     prpduct_picture = db.Column(db.String(1000), nullable= False)
     flash_sale = db.Column(db.Boolean, default=False)
-    date_added = db.Column(db.Datetime, default=datetime.utcnow)
+    date_added = db.Column(db.DateTime(), default=datetime.utcnow)
 
     carts = db.relationship('Cart', backref=db.backref('product', lazy=True))
     orders = db.relationship('Order', backref=db.backref('product', lazy=True))
@@ -57,7 +57,7 @@ class Cart(db.Model):
     
 
 class Order(db.Model):
-    id = db.Column(db.integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     quantity = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Float, nullable=False)
     status = db.Column(db.String(100), nullable=False)
