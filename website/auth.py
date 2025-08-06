@@ -51,7 +51,8 @@ def login():
         if customer:
             if customer.verify_password(password = password):
                 login_user(customer)
-                redirect('/')
+                print('Login successful')
+                return redirect('/')
             else:
                 flash('Incorrect password, please try again.')
         else:
