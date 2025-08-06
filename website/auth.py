@@ -8,27 +8,6 @@ from flask_login import login_user, logout_user, login_required
 
 auth = Blueprint('auth', __name__)
 
-@auth.route('/login', methods=['GET', 'POST'])
-def login():
-    form = LoginForm()
-    if form.validate_on_submit():
-        email = form.email.data 
-        password = form.password.data
-
-        customer = Customer.query.filter_by(email=email).first()
-
-        if customer:
-            if customer.verify_password(password = password):
-                login_user(customer)
-                redirect('/')
-            else:
-                flash('Incorrect password, please try again.')
-        else:
-            flash('Account does not exist, sign up to create account')
-
-    return render_template('login.html', form=form)
-
-
 @auth.route('/sign-up', methods=['GET', 'POST'])
 def sign_up():
     form = SignUpForm()
@@ -58,7 +37,27 @@ def sign_up():
             form.password1.data = ''
             form.password2.data = ''
          
-    return render_template('signup.html', form=form) 
+    return render_template('signup.html', form=form)
+
+@auth.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        email = form.email.data 
+        password = form.password.data
+
+        customer = Customer.query.filter_by(email=email).first()
+
+        if customer:
+            if customer.verify_password(password = password):
+                login_user(customer)
+                redirect('/')
+            else:
+                flash('Incorrect password, please try again.')
+        else:
+            flash('Account does not exist, sign up to create account')
+
+    return render_template('login.html', form=form) 
 
 
 @auth.route('/logout', methods=['GET', 'POST'])

@@ -6,7 +6,8 @@ from wtforms.validators import DataRequired,length, NumberRange
 class SignUpForm(FlaskForm):
     email = EmailField('Email', validators=[DataRequired()])
     username = StringField('Username', validators=[DataRequired(), length(min=2)])
-    password = PasswordField('Password', validators=[DataRequired(), length(min=6)])
+    password1 = PasswordField('Password', validators=[DataRequired(), length(min=6)])
+    password2 = PasswordField('Confirm Password', validators=[DataRequired(), length(min=6)])
     submit = SubmitField('Sign Up')
 
 
