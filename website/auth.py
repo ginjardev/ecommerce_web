@@ -1,5 +1,5 @@
 from flask import Blueprint
-from .forms import LoginForm, SignUpForm
+from .forms import LoginForm, SignUpForm, PasswordChangeForm
 from flask import render_template
 from .models import Customer
 from . import db
@@ -66,3 +66,19 @@ def login():
 def logout():
     logout_user()
     return redirect('/')
+
+
+@auth.route('/profile/<int:customer_id>')
+@login_required
+def profile(customer_id):
+    print('Customer ID:', customer_id)
+    customer = Customer.query.get(customer_id)
+    return render_template('profile.html', customer=customer)
+
+
+@auth.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    form = PasswordChangeForm()
+
+    return render_template('change_password.html', form=form)
