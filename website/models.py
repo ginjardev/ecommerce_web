@@ -34,7 +34,7 @@ class Product(db.Model):
     current_price = db.Column(db.Float, nullable=False)
     previous_price = db.Column(db.Float, nullable=False)
     in_stock = db.Column(db.Integer, nullable=False)
-    prpduct_picture = db.Column(db.String(1000), nullable= False)
+    product_picture = db.Column(db.String(1000), nullable= False)
     flash_sale = db.Column(db.Boolean, default=False)
     date_added = db.Column(db.DateTime(), default=datetime.utcnow)
 
