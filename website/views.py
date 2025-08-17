@@ -1,9 +1,14 @@
-from .models import Product, Cart
+from .models import Product, Cart,Order
 from flask_login import login_required, current_user
-from flask import Blueprint, render_template, flash, redirect, request
+from flask import Blueprint, render_template, flash, redirect, request, jsonify
 from . import db
+from intasend import APIService
 
 views = Blueprint('views', __name__)
+
+API_PUBLISHABLE_KEY = 'ISPubKey_test_e005a552-9557-4ee5-b2a2-414656a6193f'
+API_TOKEN = 'ISSecretKey_test_202da626-23bb-4715-875e-2b5b3ceb83ce'
+PAYLINK = 'https://sandbox.intasend.com/pay/b4e7da7c-d004-4906-be98-275e5526ae42/'
 
 @views.route("/")
 def home():
@@ -55,3 +60,105 @@ def show_cart():
         amount += item.product.current_price  * item.quantity
 
     return render_template('cart.html', cart=cart, amount=amount, total=amount+200)
+
+
+@views.route('/pluscart')
+@login_required
+def plus_cart():
+    if request.method == 'GET':
+        cart_id = request.args.get('cart_id')
+        cart_item = Cart.query.get(cart_id)
+        cart_item.quantity = cart_item.quantity + 1
+        db.session.commit()
+
+        cart = Cart.query.filter_by(customer_link=current_user.id).all()
+
+        amount = 0
+
+        for item in cart:
+            amount += item.product.current_price * item.quantity
+
+
+        data = {
+            'quantity': cart_item.quantity,
+            'amount': amount,
+            'total': amount + 200
+        }
+        return jsonify(data)
+
+
+
+@views.route('/minuscart')
+@login_required
+def minus_cart():
+    if request.method == 'GET':
+        cart_id = request.args.get('cart_id')
+        cart_item = Cart.query.get(cart_id)
+        cart_item.quantity = cart_item.quantity - 1 if cart_item.quantity > 1 else 1
+        db.session.commit()
+
+        cart = Cart.query.filter_by(customer_link=current_user.id).all()
+
+        amount = 0
+
+        for item in cart:
+            amount += item.product.current_price * item.quantity
+
+        data = {
+            'quantity': cart_item.quantity,
+            'amount': amount,
+            'total': amount + 200
+        }
+
+        return jsonify(data)
+
+
+@views.route('/removecart')
+@login_required
+def remove_cart():
+    if request.method == 'GET':
+        cart_id = request.args.get('cart_id')
+        cart_item = Cart.query.get(cart_id)
+        db.session.delete(cart_item)
+        db.session.commit()
+
+        cart = Cart.query.filter_by(customer_link=current_user.id).all()
+        amount = 0
+
+        for item in cart:
+            amount += item.product.current_price * item.quamtity
+
+        data = {
+            'quantity': cart_item.quantity,
+            'amount': amount,
+            'total': amount + 200
+        }
+
+        jsonify(data)
+
+
+@views.route('/place-order')
+@login_required
+def place_order():
+    customer_cart = Cart.query.filter_by(customer_link=current_user.id)
+    if customer_cart:
+        total = 0
+        for item in customer_cart:
+            total += item.product.current_price * item.quantity
+
+        service = APIService(publishable_key=API_PUBLISHABLE_KEY, token=API_TOKEN, test=True)
+        create_order_response = service.payment_links.create(
+            title='E-commerce Website Order',
+            amount=total + 200,
+            currency='USD',
+            description='Order from E-commerce Website',
+            customer_email=current_user.email,
+            redirect_url=PAYLINK
+        )
+
+        for item in customer_cart:
+            new_order = Order()
+            new_order.quantity = item.quantity
+            new_order.price = item.product.current_price 
+            new_order.status = create_order_response['invoice']['state'].capitalize()
+            new_order.payment_id = create_order_response['id']
