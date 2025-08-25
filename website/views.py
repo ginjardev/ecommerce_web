@@ -8,7 +8,7 @@ views = Blueprint('views', __name__)
 
 API_PUBLISHABLE_KEY = 'ISPubKey_test_e005a552-9557-4ee5-b2a2-414656a6193f'
 API_TOKEN = 'ISSecretKey_test_202da626-23bb-4715-875e-2b5b3ceb83ce'
-PAYLINK = 'https://sandbox.intasend.com/pay/b4e7da7c-d004-4906-be98-275e5526ae42/'
+PAYLINK = 'https://sandbox.intasend.com/pay/d27c15a8-bd40-47d4-b0b4-d739a95b462d/'
 
 @views.route("/")
 def home():
@@ -142,23 +142,40 @@ def remove_cart():
 def place_order():
     customer_cart = Cart.query.filter_by(customer_link=current_user.id)
     if customer_cart:
-        total = 0
-        for item in customer_cart:
-            total += item.product.current_price * item.quantity
+        try:
+            total = 0
+            for item in customer_cart:
+                total += item.product.current_price * item.quantity
 
-        service = APIService(publishable_key=API_PUBLISHABLE_KEY, token=API_TOKEN, test=True)
-        create_order_response = service.payment_links.create(
-            title='E-commerce Website Order',
-            amount=total + 200,
-            currency='USD',
-            description='Order from E-commerce Website',
-            customer_email=current_user.email,
-            redirect_url=PAYLINK
-        )
+            service = APIService(publishable_key=API_PUBLISHABLE_KEY, token=API_TOKEN, test=True)
+            create_order_response = service.collect.mpesa_stk_push(phone_number='254708374149', email=current_user.email, amount=total + 200, currency='USD',narrative='Order from E-commerce Website')
 
-        for item in customer_cart:
-            new_order = Order()
-            new_order.quantity = item.quantity
-            new_order.price = item.product.current_price 
-            new_order.status = create_order_response['invoice']['state'].capitalize()
-            new_order.payment_id = create_order_response['id']
+
+            for item in customer_cart:
+                new_order = Order()
+                new_order.quantity = item.quantity
+                new_order.price = item.product.current_price 
+                new_order.status = create_order_response['invoice']['state'].capitalize()
+                new_order.payment_id = create_order_response['id']
+                new_order.product_link = item.product_link
+                new_order.customer_link = item.customer_link
+
+                db.session.add(new_order)
+
+                product = Product.query.get(item.product_link)
+                product.in_stock = product.in_stock - item.quantity
+
+                db.session.delete(item)
+
+                db.session.commit()
+
+                flash('Order placed successfully.')
+
+                return "Order has been placed"
+        except Exception as e:
+            print(e)
+            flash('Order not placed.')
+            return redirect('/')
+    else:
+        flash('Your cart is empty.')
+        return redirect('/')
